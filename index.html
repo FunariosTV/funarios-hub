@@ -2037,6 +2037,7 @@ async function openEmail(kind, params = {}, after) {
     <div class="field"><label class="lbl">Subject</label><input class="in" id="eSubj" value="${esc(p.subject)}"></div>
     <div class="field"><label class="lbl">Message</label><textarea class="in" id="eBody" style="min-height:230px">${esc(p.body)}</textarea>${personalHint}</div>
     ${p.attachments.length ? `<div class="section-title">Attachments</div><div class="ms">${p.attachments.map(a => `<label title="${esc(a.ok ? a.name : a.reason)}" style="${a.ok ? '' : 'opacity:.55'}"><input type="checkbox" data-att="${esc(a.key)}" ${a.ok && !a.optional ? 'checked' : ''} ${a.ok ? '' : 'disabled'}>📎 ${esc(a.label)}${a.ok ? '' : ` <span class="tiny" style="color:var(--amber)">(${esc(a.reason)})</span>`}</label>`).join('')}</div>` : ''}
+    ${kind === 'cast' || kind === 'booking' ? `<label class="tiny" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="eInvite" checked>📅 Also send each person a Google Calendar invite for this shoot</label>` : ''}
     <div class="err" id="eErr" style="margin-top:10px"></div>`;
   const el = modal({ title: esc(EMAIL_TITLES[kind] || 'Send email'), body, footer: `<button class="btn ghost" data-a="no">Cancel</button><button class="btn" data-a="send" ${p.fromOk ? '' : 'disabled'}>${icon('mail')}Send</button>` });
   const count = () => {
@@ -2066,10 +2067,11 @@ async function openEmail(kind, params = {}, after) {
     const btn = el.querySelector('[data-a=send]');
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
-      const out = (await api('emailSend', { kind, ...params, subject: $('#eSubj', el).value, body: $('#eBody', el).value, recipients, attach })).result;
+      const out = (await api('emailSend', { kind, ...params, subject: $('#eSubj', el).value, body: $('#eBody', el).value, recipients, attach, invite: $('#eInvite', el) ? $('#eInvite', el).checked : false })).result;
       closeAll();
       toast(`Sent to ${out.sent} ${out.sent === 1 ? 'person' : 'people'} from ${out.from}`, 'ok');
       if (out.failed.length) toast('Some failed: ' + out.failed.join('; '), 'err');
+      if (out.invite) { if (out.invite.error) toast('Calendar invites failed: ' + out.invite.error, 'err'); else if (out.invite.invited) toast(`📅 Calendar invite sent to ${out.invite.invited}`, 'ok'); else if (out.invite.note) toast('No calendar invites: ' + out.invite.note); }
       if (out.skippedAttachments.length) toast('Not attached: ' + out.skippedAttachments.join(', '), 'err');
       invalidate('talent', 'applicants', 'people', 'emails');
       if (after) after(out); else renderRoute();
