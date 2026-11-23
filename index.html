@@ -6,6 +6,7 @@
 <title>FUNarios Hub</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0a0a0c">
+<script>try { if (localStorage.getItem('funhub_theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -376,6 +377,21 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 .live-dot.on { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.22); animation: livePulse 2.4s ease-in-out infinite; }
 @keyframes livePulse { 50% { box-shadow: 0 0 0 6px rgba(34,197,94,.05); } }
 
+/* ---------- light mode (toggle in the side menu; remembered per device) ---------- */
+:root[data-theme="light"]{
+  --bg:#f4f4f7; --bg2:#ececf1; --panel:#ffffff; --panel2:#f6f6f9; --panel3:#ececf2;
+  --line:#e1e1e8; --line2:#cfcfd9;
+  --text:#14141a; --muted:#5c5c6b; --dim:#8a8a98;
+  --red:#d9261f; --red2:#c0201a; --blue:#2368c8; --blue2:#1d5bb3; --green:#1f9a5f; --green2:#16804d;
+  --amber:#b7740a; --purple:#7a4fe0;
+  --shadow:0 10px 30px rgba(20,20,40,.10);
+  color-scheme:light;
+}
+:root[data-theme="light"] .err{color:#c0201a}
+:root[data-theme="light"] .pill.purple{color:#6a3fd0}
+:root[data-theme="light"] .seg button.on.partial{color:#111}
+.theme-btn{width:100%;margin-top:8px}
+
 </style>
 </head>
 <body>
@@ -402,7 +418,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
     <nav id="nav"></nav>
     <div class="side-foot">
       <div class="who"><div class="avatar" id="whoAv"></div><div style="min-width:0"><b id="whoName"></b><span id="whoRole"></span></div></div>
-      <button class="btn ghost small" id="logoutBtn" style="width:100%;margin-top:12px">Sign out</button>
+      <button class="btn ghost small theme-btn" id="themeBtn" style="margin-top:12px"></button>
+      <button class="btn ghost small" id="logoutBtn" style="width:100%;margin-top:8px">Sign out</button>
     </div>
   </aside>
   <main>
@@ -1079,7 +1096,20 @@ function initLogin() {
   if (!API || /PASTE_YOUR/.test(API)) err.innerHTML = 'Setup step left: paste your Apps Script Web App URL into <b>index.html</b> (API_URL).';
 }
 
+function applyTheme(t) {
+  const light = t === 'light';
+  document.documentElement.toggleAttribute('data-theme', false);
+  if (light) document.documentElement.setAttribute('data-theme', 'light');
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = light ? '#f4f4f7' : '#0a0a0c';
+  const b = $('#themeBtn'); if (b) b.textContent = light ? '☾  Dark mode' : '☀  Light mode';
+}
+function initTheme() {
+  applyTheme(store.get('funhub_theme') || 'dark');
+  $('#themeBtn').onclick = () => { const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light'; store.set('funhub_theme', next); applyTheme(next); };
+}
+
 async function start() {
+  initTheme();
   initLogin();
   $('#logoutBtn').onclick = async () => { if (!LIVE.on) { try { await api('logout', {}, { quiet: true }); } catch (e) {} } signOutLocal(); };
   $('#menuBtn').onclick = openSide;
